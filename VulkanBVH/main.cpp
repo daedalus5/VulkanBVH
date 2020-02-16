@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <vector>
 #include <cstring>
+#include <optional>
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -36,6 +37,15 @@ private:
 	GLFWwindow* window;
 	VkInstance instance;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VkDevice device;
+
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphicsFamily; // has no value until assigned
+
+		bool isComplete() {
+			return graphicsFamily.has_value();
+		}
+	};
 
 	void initWindow()
 	{
@@ -49,6 +59,39 @@ private:
 	{
 		createInstance();
 		pickPhysicalDevice();
+		createLogicalDevice();
+	}
+
+	void createLogicalDevice()
+	{
+
+	}
+
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+	
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		int i = 0;
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				indices.graphicsFamily = i;
+			}
+
+			if (indices.isComplete())
+			{
+				break;
+			}
+		}
+
+		return indices;
 	}
 
 	void pickPhysicalDevice()
@@ -81,7 +124,9 @@ private:
 
 	bool isDeviceSuitable(VkPhysicalDevice device)
 	{
-		return true;
+		QueueFamilyIndices indices = findQueueFamilies(device);
+
+		return indices.isComplete();
 	}
 
 	void mainLoop()
